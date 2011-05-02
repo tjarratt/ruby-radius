@@ -42,14 +42,14 @@ module Radius
     # +dictfilename+:: Dictionary filename to read
     # +radhost+:: name of RADIUS server optionally followed by port number
     # +myip+:: the client's own IP address (NAS IP address)
-    # +timeout+:: Timeout time 
+    # +timeout+:: Timeout time
     def initialize(dictfilename, radhost, myip, timeout)
       @dict = Radius::Dict.new
       if dictfilename != nil
-	File.open(dictfilename) {
-	  |fn|
-	  @dict.read(fn)
-	}
+        File.open(dictfilename) {
+          |fn|
+          @dict.read(fn)
+        }
       end
       @packet = Radius::Packet.new(@dict)
       # this is probably better than starting identifiers at 0
@@ -90,17 +90,17 @@ module Radius
     # possible, or the system rand call if that's not available.
     def gen_authenticator
       # get authenticator data from /dev/urandom if possible
-       if (File.exist?("/dev/urandom"))
- 	File.open("/dev/urandom") {
- 	  |urandom|
- 	  @packet.authenticator = urandom.read(16)
- 	}
-       else
-	# use the Kernel:rand method.  This is quite probably not
-	# as secure as using /dev/urandom, be wary...
-	@packet.authenticator = [rand(65536), rand(65536), rand(65536),
-	  rand(65536), rand(65536), rand(65536), rand(65536),
-	  rand(65536)].pack("n8")
+      if (File.exist?("/dev/urandom"))
+        File.open("/dev/urandom") {
+          |urandom|
+          @packet.authenticator = urandom.read(16)
+        }
+      else
+        # use the Kernel:rand method.  This is quite probably not
+        # as secure as using /dev/urandom, be wary...
+        @packet.authenticator = [rand(65536), rand(65536), rand(65536),
+          rand(65536), rand(65536), rand(65536), rand(65536),
+          rand(65536)].pack("n8")
       end
       return(@packet.authenticator)
     end
@@ -115,7 +115,7 @@ module Radius
     # Receive a packet from the server via UDP.
     def recv_packet
       if select([@sock], nil, nil, @timeout) == nil
-	raise "Timed out waiting for response packet from server"
+        raise "Timed out waiting for response packet from server"
       end
       data = @sock.recvfrom(65536)
       @packet.unpack(data[0])

@@ -249,7 +249,6 @@ module Radius
             vval].pack(p_vsa)
         end
       }
-
       return([codes[@code], @identifier, attstr.length + hdrlen,
           @authenticator, attstr].pack(p_hdr))
     end
@@ -391,7 +390,7 @@ module Radius
         newstr = newstr << (c1 ^ c2)
         i = i+1
       end
-      return(newstr)
+      return newstr
     end
 
 
@@ -429,7 +428,7 @@ module Radius
 
       0.step(given.length() -1, 16) do |i|
         lastround = xor_str(given[i, 16], Digest::MD5.digest(secret + lastround))
-        pwdout += lastround
+        pwdout += lastround.force_encoding("ASCII-8BIT")
       end
 
       pwdout.sub(/\000+$/, "") if pwdout

@@ -33,7 +33,7 @@ module Radius
     # We can inspect and alter the contents of the internal RADIUS
     # packet here (although this is probably not required for simple
     # work)
-    attr_reader :@packet
+    attr_reader :packet
 
     # This method initializes the Auth object, given a dictionary
     # filename to read, the RADIUS host[:port] to connect to, and a
@@ -43,17 +43,17 @@ module Radius
     # +radhost+:: name of RADIUS server optionally followed by port number
     # +myip+:: the client's own IP address (NAS IP address)
     # +timeout+:: Timeout time
-    def initialize(dictfilename, radhost, myip, timeout)
-      @dict = Radius::Dict.new
+    def initialize(radhost, myip, timeout, dictfilename = File.dirname(__FILE__) + "/../../dictionary")
+      @dict = Radius::Dictionary.new
       if dictfilename != nil
-        File.open(dictfilename) {
-          |fn|
+        File.open(dictfilename) do |fn|
           @dict.read(fn)
-        }
+        end
       end
       @packet = Radius::Packet.new(@dict)
+
       # this is probably better than starting identifiers at 0
-      @packet.identifier = Process.pid & 0xff
+      @packet.identifier = Kernel.rand(65535)
       @myip = myip
       @host, @port = radhost.split(":")
       @port = Socket.getservbyname("radius", "udp") unless @port
@@ -91,10 +91,9 @@ module Radius
     def gen_authenticator
       # get authenticator data from /dev/urandom if possible
       if (File.exist?("/dev/urandom"))
-        File.open("/dev/urandom") {
-          |urandom|
+        File.open("/dev/urandom") do |urandom|
           @packet.authenticator = urandom.read(16)
-        }
+        end
       else
         # use the Kernel:rand method.  This is quite probably not
         # as secure as using /dev/urandom, be wary...

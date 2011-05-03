@@ -33,7 +33,7 @@ module Radius
   # This class is patterned after the Net::Radius::Dictionary Perl
   # module written by Christopher Masto (mailto:chris@netmonger.net)
   # and Luis E. Munoz (mailto:lem@cantv.net)
-  class Dict
+  class Dictionary
     # Initialize all the instance variables.  All variables
     # start out as empty versions of the appropriate type.
     def initialize

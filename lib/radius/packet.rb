@@ -69,6 +69,8 @@ module Radius
     # writer.
     attr_writer :authenticator
 
+    attr_reader :attributes
+
     # To initialize the object, pass a Radius::Dictionary object to it.
     def initialize(dict)
       @dict = dict
@@ -255,10 +257,9 @@ module Radius
     # This method is provided a block which will pass every
     # attribute-value pair currently available.
     def each
-      @attributes.each_pair {
-        |key, value|
+      @attributes.each_pair do |key, value|
         yield(key, value)
-      }
+      end
     end
 
     # The value of the named attribute in the object's internal state
@@ -293,37 +294,32 @@ module Radius
     # Undefines all attributes.
     #
     def unset_all_attr
-      each {
-        |key, value|
+      each do |key, value|
         unset_attr(key)
-      }
+      end
     end
 
     # This method will pass each vendor-specific attribute available
     # to a passed block.  The parameters to the block are the vendor
     # ID, the attribute name, and the attribute value.
     def each_vsa
-      @vsattributes.each_index {
-        |vendorid|
+      @vsattributes.each_index do |vendorid|
         if @vsattributes[vendorid] != nil
-          @vsattributes[vendorid].each_pair {
-            |key, value|
-            value.each {
-              |val|
+          @vsattributes[vendorid].each_pair do |key, value|
+            value.each do |val|
               yield(vendorid, key, val)
-            }
-          }
+            end
+          end
         end
-      }
+      end
     end
 
     # This method is an iterator that passes each vendor-specific
     # attribute associated with a vendor ID.
     def each_vsaval(vendorid)
-      @vsattributes[vendorid].each_pair {
-        |key, value|
+      @vsattributes[vendorid].each_pair do |key, value|
         yield(key, value)
-      }
+      end
     end
 
     # Changes the value of the named vendor-specific attribute.
@@ -356,10 +352,9 @@ module Radius
     # Undefines all vendor-specific attributes.
     #
     def unset_all_vsattr
-      each_vsa {
-        |vendor, attr, datum|
+      each_vsa do |vendor, attr, datum|
         unset_vsattr(vendor, attr)
-      }
+      end
     end
 
     # Undefines all regular and vendor-specific attributes
@@ -390,14 +385,15 @@ module Radius
     def xor_str(str1, str2)
       i = 0
       newstr = ""
-      str1.each_byte {
-        |c1|
-        c2 = str2[i]
+      byte_itr = str2.each_byte
+      str1.each_byte do |c1|
+        c2 = byte_itr.next
         newstr = newstr << (c1 ^ c2)
         i = i+1
-      }
+      end
       return(newstr)
     end
+
 
     public
 
@@ -413,15 +409,33 @@ module Radius
       pwdin = attr("User-Password") || attr("Password")
       pwdout = ""
       lastround = @authenticator
-      0.step(pwdin.length-1, 16) {
-        |i|
+
+      0.step(pwdin.length-1, 16) do |i|
         pwdout = xor_str(pwdin[i, 16],
           Digest::MD5.digest(secret + lastround))
         lastround = pwdin[i, 16]
-      }
+      end
+
       pwdout.sub(/\000+$/, "") if pwdout
       pwdout[length.pwdin, -1] = "" unless (pwdout.length <= pwdin.length)
       return(pwdout)
+    end
+
+    def check_password(given, secret)
+      given += "\000" * (15 - (15 + given.length) % 16)
+
+      pwdout = "".force_encoding("ASCII-8BIT")
+      lastround = @authenticator
+
+      0.step(given.length() -1, 16) do |i|
+        lastround = xor_str(given[i, 16], Digest::MD5.digest(secret + lastround))
+        pwdout += lastround
+      end
+
+      pwdout.sub(/\000+$/, "") if pwdout
+      actual_password = @attributes["User-Password"].force_encoding("ASCII-8BIT")
+
+      pwdout == actual_password
     end
 
     # The RADIUS User-Password attribute is encoded with a shared
@@ -432,20 +446,21 @@ module Radius
     # on using the 'Password' attribute instead.
     #
     # ====Parameters
-    # +passwd+:: The password to encrypt
+    # +pwdin++:: The password to encrypt
     # +secret+:: The shared secret of the RADIUS system
     #
     def set_password(pwdin, secret)
       lastround = @authenticator
       pwdout = ""
+
       # pad to 16n bytes
-      pwdin += "\000" * (15-(15 + pwdin.length) % 16)
-      0.step(pwdin.length-1, 16) {
-        |i|
-        lastround = xor_str(pwdin[i, 16],
-			    Digest::MD5.digest(secret + lastround))
+      pwdin += "\000" * (15 - (15 + pwdin.length) % 16)
+
+      0.step(pwdin.length-1, 16) do |i|
+        lastround = xor_str(pwdin[i, 16], Digest::MD5.digest(secret + lastround))
         pwdout += lastround
-      }
+      end
+
       set_attr("User-Password", pwdout)
       return(pwdout)
     end
@@ -473,10 +488,9 @@ module Radius
         str += "#{attr} = #{val}\n"
       }
 
-      each_vsa {
-        |vendorid, vsaname, val|
+      each_vsa do |vendorid, vsaname, val|
         str += "Vendor-Id: #{vendorid} -- #{vsaname} = #{val}\n"
-      }
+      end
       return(str)
     end
 
@@ -494,6 +508,5 @@ module Radius
       new[4, 16] = Digest::MD5.digest(packed_packet + secret)
       return(new)
     end
-
   end
 end

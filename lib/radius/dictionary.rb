@@ -36,7 +36,7 @@ module Radius
   class Dictionary
     # Initialize all the instance variables.  All variables
     # start out as empty versions of the appropriate type.
-    def initialize
+    def initialize(dictionary_path = nil)
       @attr = Hash.new(nil)
       @rattr = Array.new
       @val = Array.new
@@ -45,6 +45,8 @@ module Radius
       @rvsattr = Array.new
       @vsaval = Array.new
       @rvsaval = Array.new
+      dictionary_path = File.dirname(__FILE__) + '/../../dictionary' unless dictionary_path
+      File.open(dictionary_path, 'r') {|f| read(f)}
     end
 
     # Parse a dictionary file from an IO object and learn the

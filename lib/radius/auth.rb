@@ -74,12 +74,20 @@ module Radius
     # =====Return value
     # returns true or false depending on whether or not the attempt succeeded or failed.
     def check_passwd(name, pwd, secret)
+      send_check_passwd(name, pwd, secret)
+      recv_check_passwd
+    end
+
+    def send_check_passwd(name, pwd, secret)
       @packet.code = 'Access-Request'
       gen_authenticator
       @packet.set_attr('User-Name', name)
       @packet.set_attr('NAS-IP-Address', @myip)
       @packet.set_password(pwd, secret)
       send_packet
+    end
+
+    def recv_check_passwd
       recv_packet
       return(@packet.code == 'Access-Accept')
     end

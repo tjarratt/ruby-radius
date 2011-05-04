@@ -293,7 +293,7 @@ module Radius
     # =====Return Value
     # The type of the vendor-specific attribute
     def vsattr_numtype(vendorid, code)
-      return(@rvsattr[vendorid][code][1])
+      return(@rvsattr[vendorid][code][1]) rescue nil
     end
 
     # Determines whether the vendor-specific attibute with the

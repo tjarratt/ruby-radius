@@ -145,24 +145,24 @@ module Radius
             vvalue = value.unpack("xxxxxxa#{vlength - 2}")[0]
           end
           type = @dict.vsattr_numtype(vid, vtype)
-          if type == nil
-            raise "Garbled vendor-specific attribute #{vid}/#{vtype}"
+          if type != nil
+            val = case type
+                  when 'string' then vvalue
+                  when 'integer'
+                    (@dict.vsaval_has_name(vid, vtype)) ?
+                    @dict.vsaval_name(vid, vtype, vvalue.unpack("N")[0]) :
+                      vvalue.unpack("N")[0]
+                  when 'ipaddr' then inet_ntoa(vvalue)
+                  when 'time' then vvalue.unpack("N")[0]
+                  when 'date' then vvalue.unpack("N")[0]
+                  else
+                    raise "Unknown VSattribute type found: #{vtype}"
+                  end
+            set_vsattr(vid, @dict.vsattr_name(vid, vtype), val)
           end
-          val = case type
-                when 'string' then vvalue
-                when 'integer'
-                  (@dict.vsaval_has_name(vid, vtype)) ?
-                  @dict.vsaval_name(vid, vtype, vvalue.unpack("N")[0]) :
-                    vvalue.unpack("N")[0]
-                when 'ipaddr' then inet_ntoa(vvalue)
-                when 'time' then vvalue.unpack("N")[0]
-                when 'date' then vvalue.unpack("N")[0]
-                else
-                  raise "Unknown VSattribute type found: #{vtype}"
-                end
-          set_vsattr(vid, @dict.vsattr_name(vid, vtype), val)
         else
           type = @dict.attr_numtype(tval)
+          puts type
           raise "Garbled attribute #{tval}" if (type == nil)
           val = case type
                 when 'string' then value
@@ -173,6 +173,7 @@ module Radius
                 when 'ipaddr' then inet_ntoa(value.unpack("N")[0])
                 when 'time' then value.unpack("N")[0]
                 when 'date' then value.unpack("N")[0]
+                when 'octets' then value.unpack("N")[0]
                 else raise "Unknown attribute type found: #{type}"
                 end
           set_attr(@dict.attr_name(tval), val)
